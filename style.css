@@ -1,62 +1,71 @@
-/* style.css — Mise en forme propre pour Option B */
+/* style.css — Mise en forme propre */
+
 
 body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 10px;
-  background: #f5f5f5;
-  color: #222;
+font-family: Arial, sans-serif;
+margin: 0;
+padding: 10px;
+background: #f5f5f5;
+color: #222;
 }
 
-h2 {
-  margin-top: 0;
-  padding: 10px 0;
+
+h2, h3 {
+margin-top: 10px;
+padding: 10px 0;
 }
+
 
 #video {
-  width: 100%;
-  max-width: 500px;
-  background: #000;
-  border-radius: 6px;
-  display: block;
-  margin-bottom: 15px;
+width: 100%;
+max-width: 500px;
+background: #000;
+border-radius: 6px;
+display: block;
+margin-bottom: 15px;
 }
+
 
 .controls {
-  margin-bottom: 15px;
+margin-bottom: 15px;
 }
+
 
 .controls button {
-  padding: 10px 15px;
-  margin: 5px;
-  font-size: 15px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  background: #1976d2;
-  color: white;
-  transition: 0.2s;
+padding: 10px 15px;
+margin: 5px;
+font-size: 15px;
+border: none;
+border-radius: 6px;
+cursor: pointer;
+background: #1976d2;
+color: white;
+transition: 0.2s;
 }
+
 
 .controls button:hover {
-  background: #125a9c;
+background: #125a9c;
 }
 
-.controls button.disabled,
+
 .controls button:disabled {
-  opacity: 0.4;
-  pointer-events: none;
+opacity: 0.5;
+pointer-events: none;
 }
 
-#infoAngle {
-  font-size: 18px;
-  margin-bottom: 10px;
-  font-weight: bold;
+
+#infos {
+font-size: 17px;
+margin-bottom: 10px;
+font-weight: bold;
 }
 
-#chartXYAngle {
-  background: white;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  padding: 10px;
+
+#chartPos, #chartVit, #chartReg {
+background: white;
+border: 1px solid #ccc;
+border-radius: 6px;
+padding: 10px;
+margin-top: 20px;
 }
