@@ -1,305 +1,138 @@
-/****************************************************
- * script.js — Détection ellipse + courbes + CSV
- ****************************************************/
-
-/* -------------------------------------------------
-   CONFIG
-------------------------------------------------- */
-const REAL_DIAM_M = 0.15;          // diamètre physique de l'objet (m)
-const MIN_PIXELS_FOR_DETECT = 40;  // taille minimale
-const SMOOTH_FACTOR = 0.4;         // filtrage simple
-
-/* -------------------------------------------------
-   VARIABLES GLOBALES
-------------------------------------------------- */
-let video = null;
-let canvasProcess = null;
-let ctxP = null;
-
-let streaming = false;
-let processing = false;
-
-let startTime = 0;
-let lastX = null;
-
-let dataT = [];
-let dataX = [];
-let dataV = [];
-
-/* -------------------------------------------------
-   DEMARRAGE WEBCAM
-------------------------------------------------- */
-async function startCam() {
-    video = document.getElementById("video");
-    canvasProcess = document.getElementById("canvasProcess");
-    ctxP = canvasProcess.getContext("2d");
-
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-    video.srcObject = stream;
-
-    video.onloadedmetadata = () => {
-        video.play();
-        streaming = true;
-    };
+/* ========================================
+   STYLE GLOBAL
+   ======================================== */
+body {
+  margin: 0;
+  padding: 20px;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f4f4f4;
+  color: #333;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* -------------------------------------------------
-   LANCER ACQUISITION
-------------------------------------------------- */
-function startAcq() {
-    if (!streaming) return;
-
-    dataT = [];
-    dataX = [];
-    dataV = [];
-
-    startTime = performance.now();
-    processing = true;
-
-    requestAnimationFrame(loop);
+h1, h2, h3 {
+  text-align: center;
+  margin-bottom: 15px;
 }
 
-/* -------------------------------------------------
-   STOP ACQUISITION
-------------------------------------------------- */
-function stopAcq() {
-    processing = false;
+h2 { font-size: 1.5rem; }
+h3 { font-size: 1.2rem; }
+
+/* ========================================
+   CONTENEUR VIDÉO
+   ======================================== */
+#videoWrapper {
+  position: relative;
+  width: 640px;
+  max-width: 100%;
+  margin: 0 auto 15px auto;
+  background: #000;
+  border-radius: 10px;
+  overflow: hidden;
 }
 
-/* -------------------------------------------------
-   BOUCLE DE TRAITEMENT
-------------------------------------------------- */
-function loop() {
-    if (!processing) return;
-
-    canvasProcess.width = video.videoWidth;
-    canvasProcess.height = video.videoHeight;
-
-    ctxP.drawImage(video, 0, 0);
-
-    detectEllipse();
-
-    requestAnimationFrame(loop);
+/* Vidéo : AUCUN CROP — affichage naturel */
+#preview {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  background: #000;
+  z-index: 1;
 }
 
-/* -------------------------------------------------
-   DETECTION ELLIPSE (OpenCV)
-------------------------------------------------- */
-function detectEllipse() {
-    let src = cv.imread(canvasProcess);
-    let gray = new cv.Mat();
-    let blur = new cv.Mat();
-    let thresh = new cv.Mat();
-
-    cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-    cv.GaussianBlur(gray, blur, new cv.Size(5, 5), 0);
-    cv.threshold(blur, thresh, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU);
-
-    let contours = new cv.MatVector();
-    let hierarchy = new cv.Mat();
-
-    cv.findContours(thresh, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
-
-    let bestEllipse = null;
-    let bestArea = 0;
-
-    for (let i = 0; i < contours.size(); i++) {
-        let cnt = contours.get(i);
-
-        if (cnt.rows < 20) continue;
-
-        let area = cv.contourArea(cnt);
-        if (area > bestArea) {
-            try {
-                let ellipse = cv.fitEllipse(cnt);
-                if (ellipse.size.width > MIN_PIXELS_FOR_DETECT && ellipse.size.height > MIN_PIXELS_FOR_DETECT) {
-                    bestArea = area;
-                    bestEllipse = ellipse;
-                }
-            } catch (e) {
-                /* fitEllipse peut échouer */
-            }
-        }
-    }
-
-    if (bestEllipse) {
-        handleEllipse(bestEllipse);
-    }
-
-    src.delete(); gray.delete(); blur.delete(); thresh.delete();
-    contours.delete(); hierarchy.delete();
+/* Canvas overlay */
+#previewCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
 }
 
-/* -------------------------------------------------
-   GESTION D’UNE ELLIPSE DÉTECTÉE
-------------------------------------------------- */
-function handleEllipse(el) {
-    const t = (performance.now() - startTime) / 1000;
-
-    // position de l'objet = centre ellipse
-    let x_px = el.center.x;
-
-    // conversion pixel -> mètres
-    const pix_diam = (el.size.width + el.size.height) / 2;
-    const px2m = REAL_DIAM_M / pix_diam;
-    const x_m = x_px * px2m;
-
-    // smoothing léger
-    let x_smooth = (lastX === null) ? x_m : lastX * (1 - SMOOTH_FACTOR) + x_m * SMOOTH_FACTOR;
-    lastX = x_smooth;
-
-    // vitesse (différence)
-    let v = 0;
-    if (dataX.length > 0) {
-        let dx = x_smooth - dataX[dataX.length - 1];
-        let dt = t - dataT[dataT.length - 1];
-        if (dt > 0) v = dx / dt;
-    }
-
-    // stockage
-    dataT.push(t);
-    dataX.push(x_smooth);
-    dataV.push(v);
-
-    updateInfos(x_smooth, v);
-
-    updateCharts();
+/* ========================================
+   CONTRÔLES / BOUTONS
+   ======================================== */
+#controls {
+  text-align: center;
+  margin-bottom: 15px;
 }
 
-/* -------------------------------------------------
-   INFOS EN DIRECT
-------------------------------------------------- */
-function updateInfos(x, v) {
-    document.getElementById("infos").innerHTML =
-        `x = ${x.toFixed(3)} m — v = ${v.toFixed(3)} m/s`;
+button {
+  display: inline-block;
+  background: #333;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  margin: 8px 4px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.2s, transform 0.15s;
 }
 
-/* -------------------------------------------------
-   CHARTS
-------------------------------------------------- */
-let chartPos = null;
-let chartVit = null;
-let chartReg = null;
-
-function updateCharts() {
-    if (!chartPos) initCharts();
-
-    chartPos.data.labels = dataT;
-    chartPos.data.datasets[0].data = dataX;
-    chartPos.update();
-
-    chartVit.data.labels = dataT;
-    chartVit.data.datasets[0].data = dataV;
-    chartVit.update();
-
-    computeRegression();
+button:hover { background: #444; }
+button:active { transform: scale(0.96); }
+button:disabled {
+  background: #777;
+  cursor: not-allowed;
 }
 
-/* -------------------------------------------------
-   INIT CHARTS
-------------------------------------------------- */
-function initCharts() {
-
-    chartPos = new Chart(document.getElementById("chartPos"), {
-        type: "line",
-        data: {
-            labels: [],
-            datasets: [{
-                label: "Position X (m)",
-                data: [],
-                borderColor: "red",
-                fill: false,
-            }]
-        }
-    });
-
-    chartVit = new Chart(document.getElementById("chartVit"), {
-        type: "line",
-        data: {
-            labels: [],
-            datasets: [{
-                label: "Vitesse (m/s)",
-                data: [],
-                borderColor: "blue",
-                fill: false,
-            }]
-        }
-    });
-
-    chartReg = new Chart(document.getElementById("chartReg"), {
-        type: "line",
-        data: {
-            labels: [],
-            datasets: [{
-                label: "X(t)",
-                data: [],
-                borderColor: "green",
-                fill: false,
-            }, {
-                label: "Régression",
-                data: [],
-                borderColor: "black",
-                borderDash: [5, 5],
-                fill: false,
-            }]
-        }
-    });
+/* ========================================
+   INFORMATIONS / LABELS
+   ======================================== */
+.info {
+  max-width: 640px;
+  margin: 0 auto 15px auto;
+  padding: 10px 15px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
-/* -------------------------------------------------
-   RÉGRESSION LINÉAIRE
-------------------------------------------------- */
-function computeRegression() {
-    if (dataT.length < 3) return;
-
-    const n = dataT.length;
-    let sumX = 0, sumT = 0, sumTT = 0, sumTX = 0;
-
-    for (let i = 0; i < n; i++) {
-        let t = dataT[i];
-        let x = dataX[i];
-        sumT += t;
-        sumX += x;
-        sumTT += t * t;
-        sumTX += t * x;
-    }
-
-    const a = (n * sumTX - sumT * sumX) / (n * sumTT - sumT * sumT); // pente
-    const b = (sumX - a * sumT) / n;
-
-    let reg = dataT.map(t => a * t + b);
-
-    chartReg.data.labels = dataT;
-    chartReg.data.datasets[0].data = dataX;
-    chartReg.data.datasets[1].data = reg;
-    chartReg.update();
+.info p {
+  margin: 5px 0;
+  font-size: 1rem;
 }
 
-/* -------------------------------------------------
-   EXPORT CSV
-------------------------------------------------- */
-function exportCSV() {
-    let lines = "t(s);x(m);v(m/s)\n";
-    for (let i = 0; i < dataT.length; i++) {
-        lines += `${dataT[i]};${dataX[i]};${dataV[i]}\n`;
-    }
-
-    const blob = new Blob([lines], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "exAO_donnees.csv";
-    a.click();
+#rampAngleDisplay,
+#pxToMeterDisplay,
+#nSamples,
+#aEstimated,
+#aTheory {
+  font-weight: bold;
+  color: #444;
 }
 
-/* -------------------------------------------------
-   LIEN BOUTONS
-------------------------------------------------- */
-window.onload = () => {
-    startCam();
+/* ========================================
+   CANVASES GRAPHIQUES
+   ======================================== */
+canvas {
+  border: 1px solid #444;
+  background: #fff;
+  display: block;
+  margin: 10px auto;
+  border-radius: 6px;
+}
 
-    document.getElementById("startBtn").onclick = startAcq;
-    document.getElementById("stopBtn").onclick = stopAcq;
-    document.getElementById("csvBtn").onclick = exportCSV;
-};
+/* ========================================
+   RESPONSIVE MOBILE
+   ======================================== */
+@media (max-width: 600px) {
+  body { padding: 10px; }
+  h1 { font-size: 1.3rem; }
+  h2 { font-size: 1.2rem; }
+  h3 { font-size: 1rem; }
+  button {
+    width: 100%;
+    margin: 6px 0;
+    padding: 12px;
+    font-size: 1rem;
+  }
+  .info {
+    padding: 8px;
+    font-size: 0.95rem;
+  }
+}
