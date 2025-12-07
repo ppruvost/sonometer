@@ -1,46 +1,52 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Analyse automatique — exAO 02</title>
-
-<!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<!-- Style -->
-<link rel="stylesheet" href="style.css" />
-
-<!-- OpenCV -->
-<script async src="https://docs.opencv.org/4.x/opencv.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Détection de mouvement sur un plan incliné</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-
 <body>
+  <h2>Détection de mouvement sur un plan incliné</h2>
 
-<h2>Analyse automatique — Détection + Graphiques</h2>
+  <!-- Conteneur vidéo -->
+  <div id="videoWrapper">
+    <video id="preview" autoplay muted playsinline></video>
+    <canvas id="previewCanvas"></canvas>
+  </div>
 
-<!-- Vidéo -->
-<video id="video" autoplay playsinline></video>
-<canvas id="canvasProcess" style="display:none;"></canvas>
+  <!-- Contrôles -->
+  <div id="controls">
+    <button id="startRecBtn">Démarrer l'enregistrement</button>
+    <button id="stopRecBtn" disabled>Arrêter</button>
+    <button id="loadFileBtn">Charger une vidéo</button>
+    <input type="file" id="fileInput" accept="video/*" style="display: none;">
+    <button id="processBtn" disabled>Traiter la vidéo</button>
+    <button id="slowMoBtn" disabled>Ralenti ×1</button>
+    <button id="exportCSVBtn" disabled>Exporter CSV</button>
+  </div>
 
-<!-- Contrôles -->
-<div class="controls">
-    <button id="startBtn">Démarrer acquisition</button>
-    <button id="stopBtn" disabled>Arrêter acquisition</button>
-    <button id="csvBtn">Exporter CSV</button>
-</div>
+  <!-- Informations -->
+  <div class="info">
+    <p id="recState">État : —</p>
+    <p id="blobSize">Taille vidéo : —</p>
+    <p>Nombre d'échantillons : <span id="nSamples">0</span></p>
+    <p>Accélération estimée : <span id="aEstimated">—</span> m/s²</p>
+    <p>Accélération théorique : <span id="aTheory">—</span> m/s²</p>
+    <p id="regEquation">Équation : —</p>
+    <p id="pxToMeterDisplay">Calibration : —</p>
+    <p id="rampAngleDisplay">Angle rampe : —</p>
+  </div>
 
-<!-- Infos en direct -->
-<div id="infos">x = — m — v = — m/s</div>
+  <!-- Graphiques -->
+  <div>
+    <h3>Graphiques</h3>
+    <canvas id="posChart" width="600" height="200"></canvas>
+    <canvas id="velChart" width="600" height="200"></canvas>
+  </div>
 
-<h3>Données & Graphiques</h3>
-
-<canvas id="chartPos" width="900" height="300"></canvas>
-<canvas id="chartVit" width="900" height="300"></canvas>
-<canvas id="chartReg" width="900" height="300"></canvas>
-
-<!-- Script principal -->
-<script src="script.js"></script>
-
+  <!-- Script principal -->
+  <script src="script.js"></script>
 </body>
 </html>
