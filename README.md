@@ -1,6 +1,4 @@
 # Sonomètre Pédagogique
-**Application libre de droits** – Développée par **P. PRUVOST**, enseignant en Mathématiques-Sciences au **LP Jean Mermoz (Vire Normandie)**.
-
 ---
 
 ## Objectif
