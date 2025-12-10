@@ -56,7 +56,7 @@ function updateSoundLevel() {
     const soundLevel = Math.min(60, Math.round(average * calibrationFactor));
 
     // Mise à jour de l'affichage
-    valueDisplay.textContent = `${soundLevel} dB`;
+    valueDisplay.textContent = `${soundLevel}`;
     soundBar.style.width = `${(soundLevel / 60) * 100}%`;
 
     // Couleur et alarme selon le niveau
