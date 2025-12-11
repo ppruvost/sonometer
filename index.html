@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sonomètre Web</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Sonomètre</h1>
+        <div class="meter">
+            <div class="bar" id="soundBar"></div>
+        </div>
+        <p id="soundLevel">Niveau sonore : <span id="value">0</span> dB</p>
+        <button id="startButton">Démarrer</button>
+        <button id="stopButton">Arrêter</button>
+    </div>
+    <audio id="alarmSound" src="https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3" preload="auto"></audio>
+    <script src="script.js"></script>
+</body>
+</html>
