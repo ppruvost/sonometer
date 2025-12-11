@@ -3,20 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sonomètre Web</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Sonomètre</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        #soundBarContainer {
+            width: 100%;
+            max-width: 500px;
+            height: 30px;
+            background: #eee;
+            margin: 20px auto;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        #soundBar {
+            height: 100%;
+            width: 0%;
+            transition: width 0.1s;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        #value {
+            font-size: 24px;
+            margin: 10px;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Sonomètre</h1>
-        <div class="meter">
-            <div class="bar" id="soundBar"></div>
-        </div>
-        <p id="soundLevel">Niveau sonore : <span id="value">0</span> </p>
-        <button id="startButton">Démarrer</button>
-        <button id="stopButton">Arrêter</button>
+    <h1>Sonomètre</h1>
+    <div id="soundBarContainer">
+        <div id="soundBar"></div>
     </div>
-    <audio id="alarmSound" src="https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3" preload="auto"></audio>
-    <script src="script.js"></script>
+    <div id="value">0 dB</div>
+    <button id="startButton">Démarrer</button>
+    <button id="stopButton">Arrêter</button>
+    <audio id="alarmSound" src="alarm.mp3" preload="auto"></audio>
+
+    <script>
+        const soundBar = document.getElementById("soundBar");
+        const valueDisplay = document.getElementById("value");
+        const startButton = document.getElementById("startButton");
+        const stopButton = document.getElementById("stopButton");
+        const alarmSound = document.getElementById("alarmSound");
+
+        let audioContext;
+        let analyser;
+        let microphone;
+        let isRunning = false;
+        let calibrationFactor = 0.6;
+
+        const soundLevels = [];
+        const AVERAGE_WINDOW_SECONDS = 30;
+        const MAX_HISTORY_MS = AVERAGE_WINDOW_SECONDS * 1000;
+
+        async function listAudioDevices() {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            return devices.filter(device => device.kind === 'audioinput');
+        }
+
+        startButton.addEventListener("click", async () => {
+            if (isRunning) return;
+
+            try {
+                const audioInputs = await listAudioDevices();
+                if (audioInputs.length === 0) {
+                    alert("Aucun périphérique audio détecté.");
+                    return;
+                }
+
+                const deviceId = audioInputs.length > 1 ? audioInputs[1].deviceId : audioInputs[0].deviceId;
+
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: { deviceId: { exact: deviceId } }
+                });
+
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+
+                microphone = stream;
+                const source = audioContext.createMediaStreamSource(stream);
+                source.connect(analyser);
+                isRunning = true;
+                updateSoundLevel();
+            } catch (err) {
+                console.error("Erreur microphone :", err);
+                if (err.name === "NotAllowedError") {
+                    alert("Accès au microphone refusé. Veuillez autoriser l'accès dans les paramètres du navigateur.");
+                } else if (err.name === "NotFoundError") {
+                    alert("Aucun microphone détecté. Vérifiez la connexion USB de votre smartphone.");
+                } else {
+                    alert("Erreur inconnue. Voir la console pour plus de détails.");
+                }
+            }
+        });
+
+        stopButton.addEventListener("click", () => {
+            if (!isRunning) return;
+
+            microphone.getTracks().forEach(track => track.stop());
+            audioContext.close();
+            isRunning = false;
+            soundBar.style.width = "0%";
+            valueDisplay.textContent = "0 dB";
+            soundLevels.length = 0;
+        });
+
+        function updateSoundLevel() {
+            if (!isRunning) return;
+
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(dataArray);
+
+            const sum = dataArray.reduce((a, b) => a + b, 0);
+            const averageInstant = sum / dataArray.length;
+            const soundLevelInstant = Math.min(60, Math.round(averageInstant * calibrationFactor));
+
+            const now = Date.now();
+            soundLevels.push({ level: soundLevelInstant, timestamp: now });
+
+            const oldestAllowed = now - MAX_HISTORY_MS;
+            const filteredLevels = soundLevels.filter(entry => entry.timestamp >= oldestAllowed);
+
+            let average30s = 0;
+            if (filteredLevels.length > 0) {
+                const sum30s = filteredLevels.reduce((acc, entry) => acc + entry.level, 0);
+                average30s = Math.round(sum30s / filteredLevels.length);
+            }
+
+            valueDisplay.textContent = `${average30s} dB (moyenne 30s)`;
+            soundBar.style.width = `${(average30s / 60) * 100}%`;
+
+            if (average30s < 40) {
+                soundBar.style.background = "green";
+            } else if (average30s < 55) {
+                soundBar.style.background = "orange";
+            } else {
+                soundBar.style.background = "red";
+                alarmSound.play();
+            }
+
+            requestAnimationFrame(updateSoundLevel);
+        }
+    </script>
 </body>
 </html>
