@@ -88,7 +88,7 @@ function measure() {
     soundBar.style.width = percent + "%";
 
     // Emoji selon le niveau
-    if (displayDb < 40) emoji.textContent = "😊";
+    if (displayDb < 50) emoji.textContent = "😊";
     else if (displayDb < 60) emoji.textContent = "😐";
     else emoji.textContent = "😣";
 
