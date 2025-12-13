@@ -28,7 +28,9 @@ function initChart() {
                 {
                     label: "Niveau sonore (dB)",
                     data: Array(maxHistoryLength).fill(0),
-                    borderColor: "rgb(75, 192, 192)",
+                    borderColor: "black", // Trait noir
+                    borderWidth: 1, // Trait plus fin
+                    pointRadius: 0, // Désactive les points
                     tension: 0.1,
                     fill: false,
                 },
@@ -41,6 +43,9 @@ function initChart() {
                     beginAtZero: false,
                     min: 20,
                     max: 85,
+                    grid: {
+                        color: "#f0f0f0" // Couleur de la grille plus claire
+                    }
                 },
                 x: {
                     display: false // Masquer les labels de l'axe X pour le défilement
@@ -48,6 +53,11 @@ function initChart() {
             },
             animation: {
                 duration: 0 // Désactive les animations pour un rendu fluide
+            },
+            plugins: {
+                legend: {
+                    display: false // Masquer la légende
+                }
             }
         },
     });
