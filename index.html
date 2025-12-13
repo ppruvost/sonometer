@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="style.css">
     <!-- Ajout de Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Ajout de marked.js pour convertir le Markdown en HTML -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         /* Style pour le lien vers le README */
         .readme-link {
@@ -19,6 +21,7 @@
             color: #4CAF50;
             text-decoration: none;
             font-weight: bold;
+            cursor: pointer;
         }
         .readme-link a:hover {
             text-decoration: underline;
@@ -49,9 +52,7 @@
 
         <!-- Lien vers le README sous le graphique -->
         <div class="readme-link">
-            <a href="README.md" target="_blank" rel="noopener noreferrer">
-                En savoir plus sur cet outil pédagogique
-            </a>
+            <a href="#" onclick="showReadme(); return false;">En savoir plus sur cet outil pédagogique</a>
         </div>
     </div>
 
@@ -65,5 +66,80 @@
 
     <!-- Script principal -->
     <script src="script.js"></script>
+
+    <!-- Script pour afficher le README -->
+    <script>
+        function showReadme() {
+            fetch('README.md')
+                .then(response => response.text())
+                .then(text => {
+                    const htmlContent = marked.parse(text);
+                    const readmeWindow = window.open('', '_blank');
+                    readmeWindow.document.write(`
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <title>À propos du Sonomètre Pédagogique</title>
+                            <style>
+                                body {
+                                    font-family: 'Arial', sans-serif;
+                                    line-height: 1.6;
+                                    margin: 0;
+                                    padding: 20px;
+                                    color: #333;
+                                    max-width: 800px;
+                                    margin: 0 auto;
+                                    background-color: #f9f9f9;
+                                }
+                                h1 {
+                                    color: #4CAF50;
+                                    text-align: center;
+                                    border-bottom: 2px solid #4CAF50;
+                                    padding-bottom: 10px;
+                                }
+                                h2 {
+                                    color: #333;
+                                    margin-top: 25px;
+                                }
+                                p {
+                                    margin-bottom: 15px;
+                                }
+                                a {
+                                    color: #4CAF50;
+                                    text-decoration: none;
+                                }
+                                a:hover {
+                                    text-decoration: underline;
+                                }
+                                ul, ol {
+                                    margin-bottom: 20px;
+                                    padding-left: 20px;
+                                }
+                                li {
+                                    margin-bottom: 10px;
+                                }
+                                .container {
+                                    background-color: white;
+                                    padding: 25px;
+                                    border-radius: 8px;
+                                    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                                }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="container">
+                                ${htmlContent}
+                            </div>
+                        </body>
+                        </html>
+                    `);
+                    readmeWindow.document.close();
+                })
+                .catch(err => {
+                    console.error('Erreur lors du chargement du README:', err);
+                    alert("Impossible de charger le README. Veuillez vérifier que le fichier README.md existe.");
+                });
+        }
+    </script>
 </body>
 </html>
