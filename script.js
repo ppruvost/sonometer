@@ -41,7 +41,7 @@ function initChart() {
             scales: {
                 y: {
                     beginAtZero: false,
-                    min: 20,
+                    min: 30,
                     max: 85,
                     grid: {
                         color: "#f0f0f0" // Couleur de la grille plus claire
