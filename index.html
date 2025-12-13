@@ -3,10 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sonomètre Web</title>
+    <title>Sonomètre Pédagogique</title>
     <link rel="stylesheet" href="style.css">
     <!-- Ajout de Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Style pour le lien vers le README */
+        .readme-container {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        .readme-link {
+            color: #4CAF50;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .readme-link:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -29,6 +45,13 @@
 
         <!-- Graphique -->
         <canvas id="soundChart" width="400" height="200" style="margin-top: 20px;"></canvas>
+    </div>
+
+    <!-- Lien vers le README -->
+    <div class="readme-container">
+        <a href="README.md" class="readme-link" target="_blank" rel="noopener noreferrer">
+            En savoir plus sur cet outil pédagogique
+        </a>
     </div>
 
     <!-- Son d'alarme (optimisé iOS) -->
